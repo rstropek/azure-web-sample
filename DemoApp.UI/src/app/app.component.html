@@ -1,0 +1,12 @@
+<ul>
+  <li><a [routerLink]="['profile']">Profile</a></li>
+  <li><a [routerLink]="['lazyLoad']">Lazy-load</a></li>
+</ul>
+
+<button *ngIf="!loggedIn" (click)="login()">Login</button>
+<button *ngIf="loggedIn" (click)="logout()">Logout</button>
+
+<div class="container">
+  <!--This is to avoid reload during acquireTokenSilent() because of hidden iframe -->
+  <router-outlet *ngIf="!isIframe"></router-outlet>
+</div>

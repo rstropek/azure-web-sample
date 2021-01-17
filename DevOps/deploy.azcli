@@ -1,0 +1,4 @@
+# az login --use-device-code
+# az account set --subscription b33f0285-db27-4896-ac5c-df22004b0aba
+
+./create-aad-appreg.sh AzureWebSampleUI
