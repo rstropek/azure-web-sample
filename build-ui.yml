@@ -26,11 +26,14 @@ jobs:
     displayName: 'npm install'
     inputs:
       command: 'install'
+      workingDirectory: 'DemoApp.UI'
   - script: 'npm run build -- --prod'
     displayName: 'npm build'
+    workingDirectory: 'DemoApp.UI'
   - task: ArchiveFiles@2
     displayName: 'Archive build result'
     inputs:
+      workingDirectory: 'DemoApp.UI'
       rootFolderOrFile: 'dist\demo-app-ui'
       includeRootFolder: false
       archiveFile: '$(Build.ArtifactStagingDirectory)/DemoApp.UI.zip'
