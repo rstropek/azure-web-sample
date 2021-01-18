@@ -9,7 +9,7 @@ trigger:
     - main
   paths:
     include:
-    - DemoApp.UI
+    - '/DemoApp.UI'
 
 jobs:
 - job: 'BuildUI'
@@ -51,5 +51,5 @@ jobs:
         ls -la DemoApp.UI
         ls -la DemoApp.UI/dist
         ls -la DemoApp.UI/dist/demo-app-ui
-        echo $(staticWebContentSAS)
+        echo '$(staticWebContentSAS)'
         az storage blob upload-batch --destination \$web --source DemoApp.UI/dist/demo-app-ui --pattern \* --account-name stspaa56tu4bzkgjjw --sas-token $(staticWebContentSAS)
