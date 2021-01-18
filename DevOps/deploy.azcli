@@ -1,4 +1,19 @@
 # az login --use-device-code
 # az account set --subscription b33f0285-db27-4896-ac5c-df22004b0aba
 
-./create-aad-appreg.sh AzureWebSampleUI
+RG=AzureWebSampleDev
+ENV=dev
+LOC=westeurope
+
+APP=$(./create-aad-appreg.sh AzureWebSampleUI)
+ADMINGRP=$(az ad group list --display-name AzureAdmins | jq .[0].objectId -r)
+TENANT=$(az account show | jq .tenantId -r)
+
+az deployment sub create --template-file deploy-rg.json --location $LOC \
+  --parameters rgName=$RG location=$LOC
+
+RESULT=$(az deployment group create --resource-group $RG --template-file deploy.json \
+    --parameters environment=$ENV sqlDbPasswordSeed=$(uuidgen) aadAminTeamId=$ADMINGRP aadTenantId=$TENANT)
+
+WEBAPP=$(jq '.properties.outputs.webAppName.value' -r <<< $RESULT)
+printf "Don't forget to create SQL user for web app's managed identity:\nCREATE USER [$WEBAPP] FROM EXTERNAL PROVIDER\nEXEC sp_addrolemember 'db_owner', [$WEBAPP]\n"

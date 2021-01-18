@@ -1,0 +1,259 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "type": "string",
+            "allowedValues": [ "dev", "test", "prod" ],
+            "defaultValue": "dev"
+        },
+        "appServiceSku": {
+            "type": "string",
+            "defaultValue": "P1"
+        },
+        "appServiceInstances": {
+            "type": "int",
+            "defaultValue": 1
+        },
+        "storageSku": {
+            "type": "string",
+            "defaultValue": "Standard_LRS"
+        },
+        "storageTier": {
+            "type": "string",
+            "defaultValue": "Standard"
+        },
+        "sqlDbPasswordSeed": {
+            "type": "securestring"
+        },
+        "dbPoolSku": {
+            "type": "string",
+            "defaultValue": "StandardPool"
+        },
+        "dbPoolTier": {
+            "type": "string",
+            "defaultValue": "Standard"
+        },
+        "dbPoolLimit": {
+            "type": "int",
+            "defaultValue": 50
+        },
+        "aadAminTeamId": {
+            "type": "securestring"
+        },
+        "aadTenantId": {
+            "type": "string"
+        }
+    },
+    "functions": [
+    ],
+    "variables": {
+        "appServiceName": "[concat('asp-', uniqueString(resourceGroup().name))]",
+        "webAppName": "[concat('web-', uniqueString(resourceGroup().name))]",
+        "storageName": "[concat('st', uniqueString(resourceGroup().name))]",
+        "appInsightsName": "[concat('ain-', uniqueString(resourceGroup().name))]",
+        "sqlServerName": "[concat('sql-', uniqueString(resourceGroup().name))]",
+        "dbPoolName": "[concat('dbp-', uniqueString(resourceGroup().name))]",
+        "dbName": "[concat('db-', uniqueString(resourceGroup().name))]",
+        "tagWorkload": "Sample Web App",
+        "sqlserverAdminPassword": "[concat('P', uniqueString(resourceGroup().id, parameters('sqlDbPasswordSeed')), 'x', '!')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Sql/servers",
+            "apiVersion": "2014-04-01",
+            "location": "[resourceGroup().location]",
+            "name": "[variables('sqlServerName')]",
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "properties": {
+                "administratorLogin": "sqladmin",
+                "administratorLoginPassword": "[variables('sqlserverAdminPassword')]",
+                "version": "12.0"
+            },
+            "resources": [
+                {
+                    "type": "elasticPools",
+                    "apiVersion": "2017-10-01-preview",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers/', variables('sqlServerName'))]"
+                    ],
+                    "tags": {
+                        "WorkloadName": "[variables('tagWorkload')]",
+                        "Environment": "[parameters('environment')]"
+                    },
+                    "location": "[resourceGroup().location]",
+                    "name": "[variables('dbPoolName')]",
+                    "sku": {
+                        "name": "[parameters('dbPoolSku')]",
+                        "tier": "[parameters('dbPoolTier')]",
+                        "capacity": "[parameters('dbPoolLimit')]"
+                    },
+                    "properties": {
+                        "perDatabaseSettings": {
+                            "minCapacity": 0,
+                            "maxCapacity": "[parameters('dbPoolLimit')]"
+                        }
+                    }
+                },
+                {
+                    "name": "ActiveDirectory",
+                    "type": "administrators",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+                    ],
+                    "apiVersion": "2019-06-01-preview",
+                    "properties": {
+                        "administratorType": "ActiveDirectory",
+                        "login": "Applications Team - Database Administrator",
+                        "sid": "[parameters('aadAminTeamId')]",
+                        "tenantId": "[parameters('aadTenantId')]"
+                    }
+                },
+                {
+                    "apiVersion": "2014-04-01",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers/', variables('sqlServerName'))]"
+                    ],
+                    "location": "[resourceGroup().location]",
+                    "name": "AllowAllWindowsAzureIps",
+                    "properties": {
+                        "startIpAddress": "0.0.0.0",
+                        "endIpAddress": "0.0.0.0"
+                    },
+                    "type": "firewallrules"
+                },
+                {
+                    "apiVersion": "2014-04-01",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers/', variables('sqlServerName'))]"
+                    ],
+                    "location": "[resourceGroup().location]",
+                    "name": "AllowAll",
+                    "properties": {
+                        "startIpAddress": "0.0.0.0",
+                        "endIpAddress": "255.255.255.255"
+                    },
+                    "type": "firewallrules"
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Sql/servers/databases",
+            "name": "[concat(variables('sqlServerName'), '/', variables('dbName'))]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2017-10-01-preview",
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers/', variables('sqlServerName'))]",
+                "[resourceId('Microsoft.Sql/servers/elasticpools', variables('sqlServerName'), variables('dbPoolName'))]"
+            ],
+            "sku": {
+                "name": "ElasticPool",
+                "tier": "[parameters('dbPoolTier')]",
+                "capacity": 0
+            },
+            "properties": {
+                "elasticPoolId": "[resourceId('Microsoft.Sql/servers/elasticpools', variables('sqlServerName'), variables('dbPoolName'))]"
+            }
+        },
+        {
+            "name": "[variables('appServiceName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2018-02-01",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "[parameters('appServiceSku')]",
+                "capacity": "[parameters('appServiceInstances')]"
+            },
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "properties": {}
+        },
+        {
+            "name": "[variables('storageName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "location": "[resourceGroup().location]",
+            "kind": "StorageV2",
+            "sku": {
+                "name": "[parameters('storageSku')]",
+                "tier": "[parameters('storageTier')]"
+            }
+        },
+        {
+            "type": "microsoft.insights/components",
+            "kind": "web",
+            "name": "[variables('appInsightsName')]",
+            "apiVersion": "2015-05-01",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "properties": {
+                "Application_Type": "web"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "name": "[variables('webAppName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('appServiceName'))]"
+            ],
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServiceName'))]",
+                "siteConfig": {
+                    "netFrameworkVersion": "5.0",
+                    "appSettings": [
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components/', variables('appInsightsName')), '2015-05-01').InstrumentationKey]"
+                        },
+                        {
+                            "name": "ConnectionStrings:DefaultConnection",
+                            "value": "[concat('Server=tcp:', variables('sqlServerName'), '.database.windows.net,1433;Database=', variables('dbName'), ';')]"
+                        },
+                        {
+                            "name": "AADTenant",
+                            "value": "[parameters('aadTenantId')]"
+                        }
+                    ],
+                    "connectionStrings": [],
+                    "use32BitWorkerProcess": true,
+                    "alwaysOn": true,
+                    "http20Enabled": true,
+                    "minTlsVersion": "1.2",
+                    "ftpsState": "Disabled"
+                }
+            },
+            "resources": []
+        }
+    ],
+    "outputs": {
+        "webAppName": {
+            "type": "string",
+            "value": "[variables('webAppName')]"
+        }
+    }
+}

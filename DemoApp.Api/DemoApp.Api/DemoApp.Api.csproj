@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <UserSecretsId>a775227b-552a-4e26-808c-2a7c21fa56cc</UserSecretsId>
+    <ApplicationInsightsResourceId>/subscriptions/b33f0285-db27-4896-ac5c-df22004b0aba/resourceGroups/AzureWebSampleDev/providers/microsoft.insights/components/ain-a56tu4bzkgjjw</ApplicationInsightsResourceId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.15.0" />
+    <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.6.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.1" />
+  </ItemGroup>
+
+</Project>
