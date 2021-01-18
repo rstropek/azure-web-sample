@@ -26,10 +26,8 @@ jobs:
     displayName: 'npm install'
     inputs:
       command: 'install'
-  - task: Npm@1
+  - script: 'npm run build -- --prod'
     displayName: 'npm build'
-    inputs:
-      command: 'run build -- --prod'
   - task: ArchiveFiles@2
     displayName: 'Archive build result'
     inputs:
