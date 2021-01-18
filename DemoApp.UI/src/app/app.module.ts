@@ -11,14 +11,15 @@ import { DetailComponent } from './detail/detail.component';
 import { ProfileComponent } from './profile/profile.component';
 import { HomeComponent } from './home/home.component';
 import { FailedComponent } from './failed/failed.component';
+import { environment } from 'src/environments/environment';
 
 export function MSALInstanceFactory(): IPublicClientApplication {
   return new PublicClientApplication({
     auth: {
       clientId: '9ade8f20-f9ce-47ea-9844-369a5a986140',
       authority: 'https://login.microsoftonline.com/022e4faf-c745-475a-be06-06b1e1c9e39d',
-      redirectUri: 'http://localhost:4200',
-      postLogoutRedirectUri: 'http://localhost:4200',
+      redirectUri: environment.redirect,
+      postLogoutRedirectUri: environment.redirect,
 
     },
     cache: {
