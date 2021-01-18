@@ -24,9 +24,9 @@ jobs:
   steps:
   - task: Npm@1
     displayName: 'npm install'
+    workingDirectory: 'DemoApp.UI'
     inputs:
       command: 'install'
-      workingDirectory: 'DemoApp.UI'
   - script: 'npm run build -- --prod'
     displayName: 'npm build'
     workingDirectory: 'DemoApp.UI'
