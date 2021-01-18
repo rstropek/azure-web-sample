@@ -23,9 +23,6 @@ az storage blob service-properties update --account-name $STATICSTG --static-web
 
 SAS=$(jq '.properties.outputs.staticContentSas.value' -r <<< $RESULT)
 echo SAS Token for uploading static web content: $SAS | sed "s/\&/\\\&/g" | sed "s/\%/\\\%/g"
-az storage blob upload-batch --destination \$web --source ../DemoApp.UI/dist/demo-app-ui --pattern \* --account-name stspaa56tu4bzkgjjw --sas-token $SAS --verbose
 
 WEBAPP=$(jq '.properties.outputs.webAppName.value' -r <<< $RESULT)
 printf "Don't forget to create SQL user for web app's managed identity:\nCREATE USER [$WEBAPP] FROM EXTERNAL PROVIDER\nEXEC sp_addrolemember 'db_owner', [$WEBAPP]\n"
-
-sv=2015-04-05\&ss=b\&srt=o\&sp=w\&se=2029-12-31T00\%3A00\%3A01.0000000Z\&sig=LIKXHL55QUzxr\%2Fkn48vBlgksA2R0\%2BiRHHINXCbreahA\%3D
