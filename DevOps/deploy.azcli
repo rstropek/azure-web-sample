@@ -9,14 +9,23 @@ APP=$(./create-aad-appreg.sh AzureWebSampleUI)
 ADMINGRP=$(az ad group list --display-name AzureAdmins | jq .[0].objectId -r)
 TENANT=$(az account show | jq .tenantId -r)
 
+# Deploy ARM Template for creating resource group
 az deployment sub create --template-file deploy-rg.json --location $LOC \
   --parameters rgName=$RG location=$LOC
 
+# Deploy ARM Template with app resources
 RESULT=$(az deployment group create --resource-group $RG --template-file deploy.json \
     --parameters environment=$ENV sqlDbPasswordSeed=$(uuidgen) aadAminTeamId=$ADMINGRP aadTenantId=$TENANT)
 
+# Turn Blob Storage into static web host (currently not possible in ARM Template)
 STATICSTG=$(jq '.properties.outputs.staticContentStorageName.value' -r <<< $RESULT)
 az storage blob service-properties update --account-name $STATICSTG --static-website --404-document index.html --index-document index.html
 
+SAS=$(jq '.properties.outputs.staticContentSas.value' -r <<< $RESULT)
+echo SAS Token for uploading static web content: $SAS | sed "s/\&/\\\&/g" | sed "s/\%/\\\%/g"
+az storage blob upload-batch --destination \$web --source ../DemoApp.UI/dist/demo-app-ui --pattern \* --account-name stspaa56tu4bzkgjjw --sas-token $SAS --verbose
+
 WEBAPP=$(jq '.properties.outputs.webAppName.value' -r <<< $RESULT)
 printf "Don't forget to create SQL user for web app's managed identity:\nCREATE USER [$WEBAPP] FROM EXTERNAL PROVIDER\nEXEC sp_addrolemember 'db_owner', [$WEBAPP]\n"
+
+sv=2015-04-05\&ss=b\&srt=o\&sp=w\&se=2029-12-31T00\%3A00\%3A01.0000000Z\&sig=LIKXHL55QUzxr\%2Fkn48vBlgksA2R0\%2BiRHHINXCbreahA\%3D

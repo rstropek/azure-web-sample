@@ -57,7 +57,13 @@
         "dbPoolName": "[concat('dbp-', uniqueString(resourceGroup().name))]",
         "dbName": "[concat('db-', uniqueString(resourceGroup().name))]",
         "tagWorkload": "Sample Web App",
-        "sqlserverAdminPassword": "[concat('P', uniqueString(resourceGroup().id, parameters('sqlDbPasswordSeed')), 'x', '!')]"
+        "sqlserverAdminPassword": "[concat('P', uniqueString(resourceGroup().id, parameters('sqlDbPasswordSeed')), 'x', '!')]",
+        "accountSasProperties": {
+            "signedServices": "b",
+            "signedPermission": "w",
+            "signedExpiry": "2029-12-31T00:00:01Z",
+            "signedResourceTypes": "o"
+        }
     },
     "resources": [
         {
@@ -282,6 +288,10 @@
         "staticContentStorageName": {
             "type": "string",
             "value": "[variables('staticWebStorageName')]"
+        },
+        "staticContentSas": {
+            "type": "string",
+            "value": "[listAccountSas(variables('staticWebStorageName'), '2018-07-01', variables('accountSasProperties')).accountSasToken]"
         }
     }
 }
