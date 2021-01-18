@@ -52,4 +52,5 @@ jobs:
         ls -la DemoApp.UI/dist
         ls -la DemoApp.UI/dist/demo-app-ui
         echo '$(staticWebContentSAS)'
+        az account set --subscription b33f0285-db27-4896-ac5c-df22004b0aba
         az storage blob upload-batch --destination \$web --source DemoApp.UI/dist/demo-app-ui --pattern \* --account-name stspaa56tu4bzkgjjw --sas-token $(staticWebContentSAS) --verbose
