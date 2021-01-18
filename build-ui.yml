@@ -1,0 +1,43 @@
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - DemoApp.UI
+
+jobs:
+- job: 'BuildUI'
+  displayName: 'Build Demo UI'
+  
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  variables:
+    buildConfiguration: 'Release'
+
+  steps:
+  - task: Npm@1
+    displayName: 'npm install'
+    inputs:
+      command: 'install'
+  - task: Npm@1
+    displayName: 'npm build'
+    inputs:
+      command: 'run build -- --prod'
+  - task: ArchiveFiles@2
+    displayName: 'Archive build result'
+    inputs:
+      rootFolderOrFile: 'dist\demo-app-ui'
+      includeRootFolder: false
+      archiveFile: '$(Build.ArtifactStagingDirectory)/DemoApp.UI.zip'
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish build artifact'
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      artifactName: 'DemoApp.UI'

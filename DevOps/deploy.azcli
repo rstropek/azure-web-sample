@@ -15,5 +15,8 @@ az deployment sub create --template-file deploy-rg.json --location $LOC \
 RESULT=$(az deployment group create --resource-group $RG --template-file deploy.json \
     --parameters environment=$ENV sqlDbPasswordSeed=$(uuidgen) aadAminTeamId=$ADMINGRP aadTenantId=$TENANT)
 
+STATICSTG=$(jq '.properties.outputs.staticContentStorageName.value' -r <<< $RESULT)
+az storage blob service-properties update --account-name $STATICSTG --static-website --404-document index.html --index-document index.html
+
 WEBAPP=$(jq '.properties.outputs.webAppName.value' -r <<< $RESULT)
 printf "Don't forget to create SQL user for web app's managed identity:\nCREATE USER [$WEBAPP] FROM EXTERNAL PROVIDER\nEXEC sp_addrolemember 'db_owner', [$WEBAPP]\n"

@@ -51,6 +51,7 @@
         "appServiceName": "[concat('asp-', uniqueString(resourceGroup().name))]",
         "webAppName": "[concat('web-', uniqueString(resourceGroup().name))]",
         "storageName": "[concat('st', uniqueString(resourceGroup().name))]",
+        "staticWebStorageName": "[concat('stspa', uniqueString(resourceGroup().name))]",
         "appInsightsName": "[concat('ain-', uniqueString(resourceGroup().name))]",
         "sqlServerName": "[concat('sql-', uniqueString(resourceGroup().name))]",
         "dbPoolName": "[concat('dbp-', uniqueString(resourceGroup().name))]",
@@ -187,6 +188,29 @@
             },
             "location": "[resourceGroup().location]",
             "kind": "StorageV2",
+            "properties": {
+                "allowBlobPublicAccess": false,
+                "minimumTlsVersion": "TLS1_2"
+            },
+            "sku": {
+                "name": "[parameters('storageSku')]",
+                "tier": "[parameters('storageTier')]"
+            }
+        },
+        {
+            "name": "[variables('staticWebStorageName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "location": "[resourceGroup().location]",
+            "kind": "StorageV2",
+            "properties": {
+                "allowBlobPublicAccess": true,
+                "minimumTlsVersion": "TLS1_2"
+            },
             "sku": {
                 "name": "[parameters('storageSku')]",
                 "tier": "[parameters('storageTier')]"
@@ -254,6 +278,10 @@
         "webAppName": {
             "type": "string",
             "value": "[variables('webAppName')]"
+        },
+        "staticContentStorageName": {
+            "type": "string",
+            "value": "[variables('staticWebStorageName')]"
         }
     }
 }
