@@ -40,5 +40,10 @@ jobs:
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: 'DemoApp.UI'
-  - script: az storage blob upload-batch --destination \$web --source DemoApp.UI/dist/demo-app-ui --pattern *.* --account-name stspaa56tu4bzkgjjw --sas-token $(staticWebContentSAS)
+  - task: AzureCLI@2
     displayName: 'Upload static web content'
+    inputs:
+      azureSubscription: 'Azure'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: az storage blob upload-batch --destination \$web --source DemoApp.UI/dist/demo-app-ui --pattern \* --account-name stspaa56tu4bzkgjjw --sas-token $(staticWebContentSAS)
