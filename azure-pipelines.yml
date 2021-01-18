@@ -37,6 +37,15 @@ jobs:
       arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
       zipAfterPublish: True
   - task: PublishBuildArtifacts@1
+    displayName: 'Publish build artifact'
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: 'DemoApp.API'
+  - task: AzureWebApp@1
+    displayName: 'Publish to Azure Web App'
+    inputs:
+      azureSubscription: 'Azure'
+      appName: 'web-a56tu4bzkgjjw'
+      package: '$(Build.ArtifactStagingDirectory)/**/*.zip'
+      deploymentMethod: 'zipDeploy'
+    
