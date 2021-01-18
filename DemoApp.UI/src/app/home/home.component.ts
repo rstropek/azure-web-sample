@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { MsalService } from '@azure/msal-angular';
 import { AuthenticationResult } from '@azure/msal-browser';
@@ -8,7 +9,7 @@ import { AuthenticationResult } from '@azure/msal-browser';
 })
 export class HomeComponent implements OnInit {
 
-  constructor(private authService: MsalService) { }
+  constructor(private authService: MsalService, private client: HttpClient) { }
 
   ngOnInit(): void {
     this.authService.handleRedirectObservable().subscribe({
@@ -20,6 +21,11 @@ export class HomeComponent implements OnInit {
       },
       error: (error) => console.log(error)
     });
+  }
+
+  loadFromDb() {
+    this.client.get('https://web-a56tu4bzkgjjw.azurewebsites.net/api/database').subscribe(data =>
+      console.log(data));
   }
 
 }
