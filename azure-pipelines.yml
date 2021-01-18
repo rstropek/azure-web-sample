@@ -4,15 +4,39 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
 trigger:
-- main
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - DemoApp.Api
 
-pool:
-  vmImage: 'ubuntu-latest'
-
-variables:
-  buildConfiguration: 'Release'
-
-steps:
-- script: dotnet build --configuration $(buildConfiguration)
-  workingDirectory: 'DemoApp.Api'
-  displayName: 'dotnet build $(buildConfiguration)'
+jobs:
+- job: 'BuildAPI'
+  displayName: 'Build Demo API'
+  pool:
+    vmImage: 'ubuntu-latest'
+  variables:
+    buildConfiguration: 'Release'
+  steps:
+  - task: UseDotNet@2
+    displayName: 'Install .NET 5 SDK'
+    inputs:
+      version: '5.0.x'
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet build'
+    inputs:
+      workingDirectory: 'DemoApp.Api'
+      command: 'build'
+      arguments: '--configuration $(buildConfiguration)'
+  - task: DotNetCoreCLI@2
+    displayName: 'dotnet publish'
+    inputs:
+      command: publish
+      publishWebProjects: True
+      arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+      zipAfterPublish: True
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
+      artifactName: 'DemoApp.API'
