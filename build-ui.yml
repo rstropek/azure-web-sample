@@ -20,6 +20,7 @@ jobs:
 
   variables:
     buildConfiguration: 'Release'
+    staticWebContentSAS: '$(Static Web Content SAS)'
 
   steps:
   - script: 'npm install'
@@ -31,8 +32,7 @@ jobs:
   - task: ArchiveFiles@2
     displayName: 'Archive build result'
     inputs:
-      workingDirectory: 'DemoApp.UI'
-      rootFolderOrFile: 'dist\demo-app-ui'
+      rootFolderOrFile: 'DemoApp.UI/dist/demo-app-ui'
       includeRootFolder: false
       archiveFile: '$(Build.ArtifactStagingDirectory)/DemoApp.UI.zip'
   - task: PublishBuildArtifacts@1
@@ -40,3 +40,6 @@ jobs:
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
       artifactName: 'DemoApp.UI'
+  - script: az storage blob upload-batch --destination $web --source DemoApp.UI/dist/demo-app-ui --pattern * --account-name stspaa56tu4bzkgjjw --sas-token $(staticWebContentSAS)
+    displayName: 'Upload static web content'
+    
