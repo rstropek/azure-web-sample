@@ -63,6 +63,7 @@
         "sqlServerName": "[concat('sql-', uniqueString(resourceGroup().name))]",
         "dbPoolName": "[concat('dbp-', uniqueString(resourceGroup().name))]",
         "dbName": "[concat('db-', uniqueString(resourceGroup().name))]",
+        "funcAppName": "[concat('func-', uniqueString(resourceGroup().name))]",
         "tagWorkload": "Sample Web App",
         "sqlserverAdminPassword": "[concat('P', uniqueString(resourceGroup().id, parameters('sqlDbPasswordSeed')), 'x', '!')]",
         "accountSasProperties": {
@@ -301,6 +302,39 @@
                 }
             },
             "resources": []
+        },
+        {
+            "apiVersion": "2015-08-01",
+            "type": "Microsoft.Web/sites",
+            "name": "[variables('funcAppName')]",
+            "location": "[resourceGroup().location]",
+            "kind": "functionapp",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]",
+                "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+            ],
+            "properties": {
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')),'2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "dotnet"
+                        },
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components/', variables('appInsightsName')), '2015-05-01').InstrumentationKey]"
+                        }
+                    ]
+                }
+            }
         }
     ],
     "outputs": {
