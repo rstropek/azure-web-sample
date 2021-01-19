@@ -24,13 +24,13 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: 'dotnet build'
     inputs:
-      workingDirectory: 'DemoApp.Api'
+      projects: 'DemoApp.Api/**/*.csproj'
       command: 'build'
       arguments: '--configuration $(buildConfiguration)'
   - task: DotNetCoreCLI@2
     displayName: 'dotnet publish'
     inputs:
-      workingDirectory: 'DemoApp.Func'
+      projects: 'DemoApp.Api/**/*.csproj'
       command: publish
       publishWebProjects: True
       arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
