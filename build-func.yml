@@ -4,11 +4,11 @@ trigger:
     - main
   paths:
     include:
-    - '/DemoApp.Api/'
+    - '/DemoApp.Func/'
 
 jobs:
-- job: 'BuildAPI'
-  displayName: 'Build Demo API'
+- job: 'BuildFunc'
+  displayName: 'Build Demo Function'
   
   pool:
     vmImage: 'ubuntu-latest'
@@ -18,13 +18,13 @@ jobs:
 
   steps:
   - task: UseDotNet@2
-    displayName: 'Install .NET 5 SDK'
+    displayName: 'Install .NET 3 SDK'
     inputs:
-      version: '5.0.x'
+      version: '5.1.x'
   - task: DotNetCoreCLI@2
     displayName: 'dotnet build'
     inputs:
-      workingDirectory: 'DemoApp.Api'
+      workingDirectory: 'DemoApp.Func'
       command: 'build'
       arguments: '--configuration $(buildConfiguration)'
   - task: DotNetCoreCLI@2
@@ -39,12 +39,12 @@ jobs:
     displayName: 'Publish build artifact'
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)' 
-      artifactName: 'DemoApp.API'
+      artifactName: 'DemoApp.Func'
   - task: AzureWebApp@1
     displayName: 'Publish to Azure Web App'
     inputs:
       azureSubscription: 'Azure'
-      appName: '$(WebAppName)'
+      appName: '$(FuncAppName)'
       package: '$(Build.ArtifactStagingDirectory)/**/*.zip'
       deploymentMethod: 'zipDeploy'
     
