@@ -43,6 +43,13 @@
         },
         "aadTenantId": {
             "type": "string"
+        },
+        "apiClientId": {
+            "type": "string"
+        },
+        "apiAudience": {
+            "type": "string",
+            "defaultValue": "https://azure-web-sample-api.net"
         }
     },
     "functions": [
@@ -267,6 +274,22 @@
                         {
                             "name": "AADTenant",
                             "value": "[parameters('aadTenantId')]"
+                        },
+                        {
+                            "name": "AzureAd:Instance",
+                            "value": "https://login.microsoftonline.com/"
+                        },
+                        {
+                            "name": "AzureAd:ClientId",
+                            "value": "[parameters('apiClientId')]"
+                        },
+                        {
+                            "name": "AzureAd:TenantId",
+                            "value": "[parameters('aadTenantId')]"
+                        },
+                        {
+                            "name": "AzureAd:Audience",
+                            "value": "[parameters('apiAudience')]"
                         }
                     ],
                     "connectionStrings": [],

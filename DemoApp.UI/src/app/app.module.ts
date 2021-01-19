@@ -31,9 +31,10 @@ export function MSALInstanceFactory(): IPublicClientApplication {
 export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string>>();
   protectedResourceMap.set('https://graph.microsoft.com/v1.0/me', ['user.read']);
+  protectedResourceMap.set(environment.api, ['https://azure-web-sample-api.net/user_impersonation']);
 
   return {
-    interactionType: InteractionType.Popup,
+    interactionType: InteractionType.Redirect,
     protectedResourceMap
   };
 }

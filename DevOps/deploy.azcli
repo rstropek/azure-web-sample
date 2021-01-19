@@ -6,6 +6,7 @@ ENV=dev
 LOC=westeurope
 
 APP=$(./create-aad-appreg.sh AzureWebSampleUI)
+API=$(./create-aad-api.sh AzureWebSampleAPI $(jq .appId -r <<< $APP))
 ADMINGRP=$(az ad group list --display-name AzureAdmins | jq .[0].objectId -r)
 TENANT=$(az account show | jq .tenantId -r)
 
@@ -15,7 +16,8 @@ az deployment sub create --template-file deploy-rg.json --location $LOC \
 
 # Deploy ARM Template with app resources
 RESULT=$(az deployment group create --resource-group $RG --template-file deploy.json \
-    --parameters environment=$ENV sqlDbPasswordSeed=$(uuidgen) aadAminTeamId=$ADMINGRP aadTenantId=$TENANT)
+    --parameters environment=$ENV sqlDbPasswordSeed=$(uuidgen) aadAminTeamId=$ADMINGRP \
+                 aadTenantId=$TENANT apiClientId=$(jq .appId -r <<< $API))
 
 # Turn Blob Storage into static web host (currently not possible in ARM Template)
 STATICSTG=$(jq '.properties.outputs.staticContentStorageName.value' -r <<< $RESULT)

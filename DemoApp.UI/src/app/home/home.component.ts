@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { MsalService } from '@azure/msal-angular';
 import { AuthenticationResult } from '@azure/msal-browser';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-home',
@@ -24,7 +25,7 @@ export class HomeComponent implements OnInit {
   }
 
   loadFromDb() {
-    this.client.get('https://web-a56tu4bzkgjjw.azurewebsites.net/api/database').subscribe(data =>
+    this.client.get(`${environment.api}/api/database`).subscribe(data =>
       console.log(data));
   }
 
