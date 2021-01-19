@@ -9,7 +9,7 @@ trigger:
     - main
   paths:
     include:
-    - '/DemoApp.UI'
+    - '/DemoApp.UI/'
 
 jobs:
 - job: 'BuildUI'
