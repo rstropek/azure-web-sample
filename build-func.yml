@@ -30,6 +30,7 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: 'dotnet publish'
     inputs:
+      workingDirectory: 'DemoApp.Func'
       projects: 'DemoApp.Func/**/*.csproj'
       command: publish
       publishWebProjects: True
