@@ -296,6 +296,14 @@
                         {
                             "name": "AzureAd:Audience",
                             "value": "[parameters('apiAudience')]"
+                        },
+                        {
+                            "name": "FunctionUrl",
+                            "value": "[variables('funcAppName')]"
+                        },
+                        {
+                            "name": "KeyVault",
+                            "value": "[variables('kvName')]"
                         }
                     ],
                     "connectionStrings": [],
@@ -401,6 +409,10 @@
         "staticContentSas": {
             "type": "string",
             "value": "[listAccountSas(variables('staticWebStorageName'), '2018-07-01', variables('accountSasProperties')).accountSasToken]"
+        },
+        "funcAppName": {
+            "type": "string",
+            "value": "[variables('funcAppName')]"
         }
     }
 }

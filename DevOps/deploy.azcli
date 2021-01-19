@@ -28,3 +28,6 @@ echo SAS Token for uploading static web content: $SAS | sed "s/\&/\\\&/g" | sed 
 
 WEBAPP=$(jq '.properties.outputs.webAppName.value' -r <<< $RESULT)
 printf "Don't forget to create SQL user for web app's managed identity:\nCREATE USER [$WEBAPP] FROM EXTERNAL PROVIDER\nEXEC sp_addrolemember 'db_owner', [$WEBAPP]\n"
+
+FUNCAPP=$(jq '.properties.outputs.funcAppName.value' -r <<< $RESULT)
+FUNCKEY=$(az functionapp function keys list --resource-group $RG --name $FUNCAPP --function-name Add | jq .default -r)
