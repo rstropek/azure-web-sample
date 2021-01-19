@@ -30,10 +30,10 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: 'dotnet publish'
     inputs:
-      workingDirectory: 'DemoApp.Fun'
-      projects: 'DemoApp.Fun/**/*.csproj'
+      workingDirectory: 'DemoApp.Func'
+      projects: 'DemoApp.Func/**/*.csproj'
       command: publish
-      publishWebProjects: True
+      publishWebProjects: False
       arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
       zipAfterPublish: True
   - task: PublishBuildArtifacts@1
