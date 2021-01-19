@@ -20,7 +20,7 @@ jobs:
   - task: UseDotNet@2
     displayName: 'Install .NET 3 SDK'
     inputs:
-      version: '5.1.x'
+      version: '3.1.x'
   - task: DotNetCoreCLI@2
     displayName: 'dotnet build'
     inputs:
