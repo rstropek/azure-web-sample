@@ -50,6 +50,10 @@
         "apiAudience": {
             "type": "string",
             "defaultValue": "https://azure-web-sample-api.net"
+        },
+        "keyVaultSku": {
+            "type": "string",
+            "defaultValue": "Standard"
         }
     },
     "functions": [
@@ -57,6 +61,7 @@
     "variables": {
         "appServiceName": "[concat('asp-', uniqueString(resourceGroup().name))]",
         "webAppName": "[concat('web-', uniqueString(resourceGroup().name))]",
+        "kvName": "[concat('kv-', uniqueString(resourceGroup().name))]",
         "storageName": "[concat('st', uniqueString(resourceGroup().name))]",
         "staticWebStorageName": "[concat('stspa', uniqueString(resourceGroup().name))]",
         "appInsightsName": "[concat('ain-', uniqueString(resourceGroup().name))]",
@@ -313,6 +318,10 @@
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]",
                 "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
             ],
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
             "properties": {
                 "siteConfig": {
                     "appSettings": [
@@ -333,6 +342,49 @@
                             "value": "[reference(resourceId('microsoft.insights/components/', variables('appInsightsName')), '2015-05-01').InstrumentationKey]"
                         }
                     ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "2016-10-01",
+            "name": "[variables('kvName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "properties": {
+                "enabledForDeployment": false,
+                "enabledForDiskEncryption": false,
+                "enabledForTemplateDeployment": true,
+                "tenantId": "[parameters('aadTenantId')]",
+                "accessPolicies": [
+                    {
+                        "objectId": "[reference(resourceId('Microsoft.Web/sites', variables('webAppName')), '2019-08-01', 'full').identity.principalId]",
+                        "tenantId": "[parameters('aadTenantId')]",
+                        "permissions": {
+                            "keys": [],
+                            "secrets": [ "get" ]
+                        }
+                    },
+                    {
+                        "objectId": "[parameters('aadAminTeamId')]",
+                        "tenantId": "[parameters('aadTenantId')]",
+                        "permissions": {
+                            "keys": [],
+                            "secrets": [ "get", "set", "list", "delete" ]
+                        }
+                    }
+
+                ],
+                "sku": {
+                    "name": "[parameters('keyVaultSku')]",
+                    "family": "A"
+                },
+                "networkAcls": {
+                    "defaultAction": "Allow",
+                    "bypass": "AzureServices"
                 }
             }
         }
