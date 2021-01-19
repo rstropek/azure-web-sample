@@ -5,7 +5,8 @@
 export const environment = {
   production: false,
   redirect: 'http://localhost:4200',
-  api: 'http://localhost:5000'
+  api: 'http://localhost:5000',
+  function: 'http://localhost:7071'
 };
 
 /*

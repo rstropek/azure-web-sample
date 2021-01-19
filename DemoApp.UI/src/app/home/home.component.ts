@@ -29,4 +29,8 @@ export class HomeComponent implements OnInit {
       console.log(data));
   }
 
+  loadFromFunctionApp() {
+    this.client.get(`${environment.function}/api/add`).subscribe(data =>
+      console.log(data));
+  }
 }
