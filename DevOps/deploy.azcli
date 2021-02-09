@@ -15,9 +15,15 @@ az deployment sub create --template-file deploy-rg.json --location $LOC \
   --parameters rgName=$RG location=$LOC
 
 # Deploy ARM Template with app resources
-RESULT=$(az deployment group create --resource-group $RG --template-file deploy.json \
+RESULT=$(az deployment group create --resource-group $RG --template-file deploy.json --name $(date +%F_%H-%M-%S) \
     --parameters environment=$ENV sqlDbPasswordSeed=$(uuidgen) aadAminTeamId=$ADMINGRP \
-                 aadTenantId=$TENANT apiClientId=$(jq .appId -r <<< $API))
+                 aadTenantId=$TENANT apiClientId=$(jq .appId -r <<< $API) \
+                 sqlIpException=$(dig +short myip.opendns.com @resolver1.opendns.com))
+
+# Set minimal TLS version. Note that his is a workaround. For whatever reason, ARM deployment fails
+# with a "bad request" error if minimal TLS version is set in ARM template.
+az sql server update --resource-group $RG --name $(jq '.properties.outputs.sqlServerName.value' -r <<< $RESULT) \
+  --minimal-tls-version 1.2
 
 # Turn Blob Storage into static web host (currently not possible in ARM Template)
 STATICSTG=$(jq '.properties.outputs.staticContentStorageName.value' -r <<< $RESULT)

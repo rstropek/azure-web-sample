@@ -4,7 +4,11 @@
     "parameters": {
         "environment": {
             "type": "string",
-            "allowedValues": [ "dev", "test", "prod" ],
+            "allowedValues": [
+                "dev",
+                "test",
+                "prod"
+            ],
             "defaultValue": "dev"
         },
         "appServiceSku": {
@@ -25,6 +29,9 @@
         },
         "sqlDbPasswordSeed": {
             "type": "securestring"
+        },
+        "sqlIpException": {
+            "type": "string"
         },
         "dbPoolSku": {
             "type": "string",
@@ -54,10 +61,21 @@
         "keyVaultSku": {
             "type": "string",
             "defaultValue": "Standard"
+        },
+        "vnetAddressSpace": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/23"
+        },
+        "defaultSubnetAddressSpace": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/24"
+        },
+        "peSubnetAddressSpace": {
+            "type": "string",
+            "defaultValue": "10.0.1.0/24"
         }
     },
-    "functions": [
-    ],
+    "functions": [],
     "variables": {
         "appServiceName": "[concat('asp-', uniqueString(resourceGroup().name))]",
         "webAppName": "[concat('web-', uniqueString(resourceGroup().name))]",
@@ -69,6 +87,15 @@
         "dbPoolName": "[concat('dbp-', uniqueString(resourceGroup().name))]",
         "dbName": "[concat('db-', uniqueString(resourceGroup().name))]",
         "funcAppName": "[concat('func-', uniqueString(resourceGroup().name))]",
+        "vnetName": "[concat('vnet-', uniqueString(resourceGroup().name))]",
+        "sqlPeName": "[concat('sql-pe-', uniqueString(resourceGroup().name))]",
+        "kvPeName": "[concat('kv-pe-', uniqueString(resourceGroup().name))]",
+        "sqlPrivateDnsZoneName": "[concat('privatelink', environment().suffixes.sqlServerHostname)]",
+        "kvPrivateDnsZoneName": "[concat('privatelink', environment().suffixes.keyvaultDns)]",
+        "sqlPeDnsGroupName": "[concat(variables('sqlPeName'),'/pe-dns-group')]",
+        "kvPeDnsGroupName": "[concat(variables('kvPeName'),'/pe-dns-group')]",
+        "subnetDefault": "subnet-default",
+        "subnetPrivateEndpoints": "subnet-pe",
         "tagWorkload": "Sample Web App",
         "sqlserverAdminPassword": "[concat('P', uniqueString(resourceGroup().id, parameters('sqlDbPasswordSeed')), 'x', '!')]",
         "accountSasProperties": {
@@ -79,6 +106,39 @@
         }
     },
     "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-05-01",
+            "name": "[variables('vnetName')]",
+            "tags": {
+                "WorkloadName": "[variables('tagWorkload')]",
+                "Environment": "[parameters('environment')]"
+            },
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vnetAddressSpace')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetDefault')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('defaultSubnetAddressSpace')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('subnetPrivateEndpoints')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('peSubnetAddressSpace')]",
+                            "privateEndpointNetworkPolicies": "Disabled"
+                        }
+                    }
+                ]
+            },
+            "resources": [ ]
+        },
         {
             "type": "Microsoft.Sql/servers",
             "apiVersion": "2014-04-01",
@@ -153,8 +213,8 @@
                     "location": "[resourceGroup().location]",
                     "name": "AllowAll",
                     "properties": {
-                        "startIpAddress": "0.0.0.0",
-                        "endIpAddress": "255.255.255.255"
+                        "startIpAddress": "[parameters('sqlIpException')]",
+                        "endIpAddress": "[parameters('sqlIpException')]"
                     },
                     "type": "firewallrules"
                 }
@@ -180,6 +240,78 @@
             },
             "properties": {
                 "elasticPoolId": "[resourceId('Microsoft.Sql/servers/elasticpools', variables('sqlServerName'), variables('dbPoolName'))]"
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones",
+            "apiVersion": "2020-01-01",
+            "name": "[variables('sqlPrivateDnsZoneName')]",
+            "location": "global",
+            "dependsOn": [
+                "[variables('vnetName')]"
+            ],
+            "properties": ""
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "apiVersion": "2020-01-01",
+            "name": "[concat(variables('sqlPrivateDnsZoneName'), '/', variables('sqlPrivateDnsZoneName'), '-link')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('sqlPrivateDnsZoneName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+            ],
+            "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('sqlPeName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[variables('vnetName')]",
+                "[variables('sqlServerName')]"
+            ],
+            "properties": {
+                "subnet": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetPrivateEndpoints'))]"
+                },
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "[variables('sqlPeName')]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.Sql/servers',variables('sqlServerName'))]",
+                            "groupIds": [
+                                "sqlServer"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('sqlPeDnsGroupName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('sqlPrivateDnsZoneName'))]",
+                "[variables('sqlPeName')]"
+            ],
+            "properties": {
+                "privateDnsZoneConfigs": [
+                    {
+                        "name": "config1",
+                        "properties": {
+                            "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', variables('sqlPrivateDnsZoneName'))]"
+                        }
+                    }
+                ]
             }
         },
         {
@@ -209,7 +341,18 @@
             "kind": "StorageV2",
             "properties": {
                 "allowBlobPublicAccess": false,
-                "minimumTlsVersion": "TLS1_2"
+                "minimumTlsVersion": "TLS1_2",
+                "networkAcls": {
+                    "defaultAction": "Deny",
+                    "bypass": "AzureServices",
+                    "ipRules": [
+                        {
+                            "value": "[parameters('sqlIpException')]",
+                            "action": "Allow"
+                        }
+                    ],
+                    "virtualNetworkRules": []
+                }
             },
             "sku": {
                 "name": "[parameters('storageSku')]",
@@ -266,8 +409,10 @@
             },
             "properties": {
                 "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServiceName'))]",
+                "httpsOnly": true,
                 "siteConfig": {
                     "netFrameworkVersion": "5.0",
+                    "ftpsState": "FtpsOnly",
                     "appSettings": [
                         {
                             "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
@@ -331,7 +476,9 @@
                 "Environment": "[parameters('environment')]"
             },
             "properties": {
+                "httpsOnly": true,
                 "siteConfig": {
+                    "ftpsState": "Disabled",
                     "appSettings": [
                         {
                             "name": "AzureWebJobsStorage",
@@ -366,6 +513,8 @@
                 "enabledForDeployment": false,
                 "enabledForDiskEncryption": false,
                 "enabledForTemplateDeployment": true,
+                "enableSoftDelete": true,
+                "enablePurgeProtection": true,
                 "tenantId": "[parameters('aadTenantId')]",
                 "accessPolicies": [
                     {
@@ -373,7 +522,9 @@
                         "tenantId": "[parameters('aadTenantId')]",
                         "permissions": {
                             "keys": [],
-                            "secrets": [ "get" ]
+                            "secrets": [
+                                "get"
+                            ]
                         }
                     },
                     {
@@ -381,19 +532,102 @@
                         "tenantId": "[parameters('aadTenantId')]",
                         "permissions": {
                             "keys": [],
-                            "secrets": [ "get", "set", "list", "delete" ]
+                            "secrets": [
+                                "get",
+                                "set",
+                                "list",
+                                "delete"
+                            ]
                         }
                     }
-
                 ],
                 "sku": {
                     "name": "[parameters('keyVaultSku')]",
                     "family": "A"
                 },
                 "networkAcls": {
-                    "defaultAction": "Allow",
-                    "bypass": "AzureServices"
+                    "defaultAction": "Deny",
+                    "bypass": "AzureServices",
+                    "ipRules": [
+                        {
+                            "value": "[parameters('sqlIpException')]",
+                            "action": "Allow"
+                        }
+                    ],
+                    "virtualNetworkRules": []
                 }
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones",
+            "apiVersion": "2020-01-01",
+            "name": "[variables('kvPrivateDnsZoneName')]",
+            "location": "global",
+            "dependsOn": [
+                "[variables('vnetName')]"
+            ],
+            "properties": ""
+        },
+        {
+            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "apiVersion": "2020-01-01",
+            "name": "[concat(variables('kvPrivateDnsZoneName'), '/', variables('kvPrivateDnsZoneName'), '-link')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('kvPrivateDnsZoneName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+            ],
+            "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('kvPeName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[variables('vnetName')]",
+                "[variables('kvName')]"
+            ],
+            "properties": {
+                "subnet": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetPrivateEndpoints'))]"
+                },
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "[variables('kvPeName')]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.KeyVault/vaults',variables('kvName'))]",
+                            "groupIds": [
+                                "vault"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('kvPeDnsGroupName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', variables('kvPrivateDnsZoneName'))]",
+                "[variables('kvPeName')]"
+            ],
+            "properties": {
+                "privateDnsZoneConfigs": [
+                    {
+                        "name": "config1",
+                        "properties": {
+                            "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', variables('kvPrivateDnsZoneName'))]"
+                        }
+                    }
+                ]
             }
         }
     ],
@@ -413,6 +647,10 @@
         "funcAppName": {
             "type": "string",
             "value": "[variables('funcAppName')]"
+        },
+        "sqlServerName": {
+            "type": "string",
+            "value": "[variables('sqlServerName')]"
         }
     }
 }
