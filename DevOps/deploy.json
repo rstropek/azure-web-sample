@@ -449,6 +449,14 @@
                         {
                             "name": "KeyVault",
                             "value": "[variables('kvName')]"
+                        },
+                        {
+                            "name": "WEBSITE_DNS_SERVER",
+                            "value": "168.63.129.16"
+                        },
+                        {
+                            "name": "WEBSITE_VNET_ROUTE_ALL",
+                            "value": "1"
                         }
                     ],
                     "connectionStrings": [],
